@@ -1,0 +1,24 @@
+<section class="max-w-7xl mx-auto px-4 py-12">
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-6">Aktuality z her</h2>
+        
+        <div id="zpravy-kontejner" class="flex flex-col gap-4">
+            <p class="text-gray-500 animate-pulse">Připojuju se jjpj</p>
+        </div>
+    </section>
+
+    <script>
+        fetch('/api/aktuality')
+            .then(odpoved => odpoved.json())
+            .then(data => {
+                const kontejner = document.getElementById('zpravy-kontejner');
+                kontejner.innerHTML = ''; 
+
+                data.forEach(polozka => {
+                    kontejner.innerHTML += `
+                        <div class="bg-gray-50 border-l-4 border-[#ffb600] p-4 rounded-r-lg shadow-sm">
+                            <p class="text-lg font-semibold text-gray-800">${polozka.zprava}</p>
+                        </div>
+                    `;
+                });
+            });
+    </script>
