@@ -1,0 +1,10 @@
+1. Rozdíl mezi metodou POST a GET
+Post data se posílají skrytě v body
+Get data se odesílají přímo v URL adrese
+2.  Jaké znám jednotky V CSS
+PX
+rem
+%
+Vh
+3. Co dělá defer u načítání scriptu i ukázkový kód
+no stahuje data nebo ty skripty natajno zatímco stránka se může normálně načítat
