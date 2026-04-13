@@ -7,6 +7,7 @@
     </section>
 
     <script>
+    function nactiRecenze() {
         fetch('/api/aktuality')
             .then(odpoved => odpoved.json())
             .then(data => {
@@ -15,10 +16,16 @@
 
                 data.forEach(polozka => {
                     kontejner.innerHTML += `
-                        <div class="bg-gray-50 border-l-4 border-[#ffb600] p-4 rounded-r-lg shadow-sm">
-                            <p class="text-lg font-semibold text-gray-800">${polozka.zprava}</p>
+                        <div class="bg-gray-800/50 border-l-4 border-indigo-500 p-5 rounded-r-xl shadow-lg backdrop-blur-sm">
+                            <h3 class="text-2xl font-bold text-white mb-1">${polozka.hra}</h3>
+                            <p class="text-sm text-indigo-400 font-semibold mb-3">Recenzuje: ${polozka.jmeno}</p>
+                            <p class="text-gray-300 leading-relaxed">${polozka.zprava}</p>
                         </div>
                     `;
                 });
             });
+    }
+
+   
+        nactiRecenze();
     </script>
