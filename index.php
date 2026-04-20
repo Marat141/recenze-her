@@ -1,3 +1,46 @@
+<?php
+try {
+    $db = new PDO('mysql:host=localhost;port=8889;charset=utf8', 'root', 'root');
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->exec("CREATE DATABASE IF NOT EXISTS recenze_her CHARACTER SET utf8 COLLATE utf8_unicode_ci");
+    $db->exec("USE recenze_her");
+    $db->exec("CREATE TABLE IF NOT EXISTS recenze (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        jmeno VARCHAR(100) NOT NULL,
+        prijmeni VARCHAR(100) NOT NULL,
+        hra VARCHAR(200) NOT NULL,
+        email VARCHAR(200) NOT NULL,
+        cislo VARCHAR(50),
+        zprava TEXT,
+        hvezdicky TINYINT NOT NULL,
+        datum DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (PDOException $e) {
+    die('Chyba připojení k databázi: ' . $e->getMessage());
+}
+
+$chyba = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $jmeno     = trim($_POST['first-name'] ?? '');
+    $prijmeni  = trim($_POST['last-name'] ?? '');
+    $hra       = trim($_POST['company'] ?? '');
+    $email     = trim($_POST['email'] ?? '');
+    $cislo     = trim($_POST['phone-number'] ?? '');
+    $zprava    = trim($_POST['message'] ?? '');
+    $hvezdicky = (int)($_POST['hs-ratings-readonly'] ?? 0);
+
+    if ($jmeno && $prijmeni && $hra && $email && $hvezdicky >= 1) {
+        $stmt = $db->prepare("INSERT INTO recenze (jmeno, prijmeni, hra, email, cislo, zprava, hvezdicky) VALUES (?,?,?,?,?,?,?)");
+        $stmt->execute([$jmeno, $prijmeni, $hra, $email, $cislo, $zprava, $hvezdicky]);
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    } else {
+        $chyba = 'Vyplňte prosím všechna povinná pole a vyberte hodnocení.';
+    }
+}
+
+$recenze = $db->query("SELECT * FROM recenze ORDER BY datum DESC")->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,36 +49,39 @@
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
-    <div class="isolate bg-black-100 flex justify-end gap-6 py-2 pr-8">
-        <a class="text-sm font-bold text-gray-800 hover:text-white transition-colors" href="">Počítače</a>
-        <a class="text-sm font-bold text-gray-800 hover:text-white transition-colors" href="">Mobily</a>
-        <a class="text-sm font-bold text-gray-800 hover:text-white transition-colors" href="">Hry na PC</a>
-        <a class="text-sm font-bold text-gray-800 hover:text-white transition-colors" href="">Hry na PS</a>
+<body class="bg-gray-950 min-h-screen">
+    <div class="bg-gray-950 border-b border-gray-800 flex justify-end gap-6 py-2 px-8">
+        <a class="text-sm font-bold text-gray-400 hover:text-white transition-colors" href="">Počítače</a>
+        <a class="text-sm font-bold text-gray-400 hover:text-white transition-colors" href="">Mobily</a>
+        <a class="text-sm font-bold text-gray-400 hover:text-white transition-colors" href="">Hry na PC</a>
+        <a class="text-sm font-bold text-gray-400 hover:text-white transition-colors" href="">Hry na PS</a>
     </div>
-    <header class="isolate bg-gray-900 max-w-10xl mx-auto px-4 py-6 flex justify-between items-center">  
-        <div class="flex items-center gap-6"> 
-            <img class="w-25 h-25" src="/obrázky/dark-ninja-mascot-logo-for-team-esport-gaming-vector.jpg" alt="Logo">
-            <h1 class="font-bold text-2xl text-gray-500 leading-tight max-w-sm">Recenze na hry</h1>
-        </div> 
-        <div class="flex flex-col items-end gap-5"> 
-            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-full overflow-hidden w-72">
-                <input class="w-full px-4 py-2 bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400" type="text">
-                <button class="isolate bg-gray-800 px-4 py-2 hover:bg-yellow-500 transition-colors">Hledat hry</button>
+    <header class="bg-gray-900 border-b border-gray-800 px-4 py-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <img class="w-12 h-12 rounded-full" src="/obrázky/dark-ninja-mascot-logo-for-team-esport-gaming-vector.jpg" alt="Logo">
+                <h1 class="font-bold text-2xl text-white leading-tight">Recenze na hry</h1>
             </div>
-            <nav class="flex items-center gap-4 text-sm font-semibold text-gray-700">
-                <a class="hover:text-[#ffb600] transition-colors" href="">Recenze</a>
-                <a class="hover:text-[#ffb600] transition-colors" href="">Nejlepší hry</a>
-                <a class="hover:text-[#ffb600] transition-colors" href="">Hry na Xbox</a>
-                <a class="hover:text-[#ffb600] transition-colors" href="">Hry na PS</a>
-
-            </nav>
+            <div class="flex flex-col items-end gap-4">
+                <div class="flex items-center bg-gray-800 border border-gray-700 rounded-full overflow-hidden w-72">
+                    <input class="w-full px-4 py-2 bg-transparent outline-none text-sm text-gray-200 placeholder-gray-500" type="text" placeholder="Hledat hru...">
+                    <button class="bg-violet-600 px-4 py-2 text-white text-sm font-semibold hover:bg-violet-500 transition-colors">Hledat</button>
+                </div>
+                <nav class="flex items-center gap-4 text-sm font-semibold text-gray-300">
+                    <a class="hover:text-violet-400 transition-colors" href="">Recenze</a>
+                    <a class="hover:text-violet-400 transition-colors" href="">Nejlepší hry</a>
+                    <a class="hover:text-violet-400 transition-colors" href="">Hry na Xbox</a>
+                    <a class="hover:text-violet-400 transition-colors" href="">Hry na PS</a>
+                </nav>
+            </div>
         </div>
     </header>
-    <main class="isolate bg-gray-900 max-w-10xl mx-auto px-4 py-16 gap-12 flex flex-col items-center">
-        <div class="">
-            <h1 class=" text-5xl font-extrabold text-green-600 tracking-tight mb-6">Napište tu rezenci </h1>
-            <p class="text-gray-400 mb-8 leading-relaxed font-medium">Udělejte nám rezenci</p>
+    <main class="bg-gray-950 px-4 py-16">
+        <div class="max-w-7xl mx-auto flex flex-col items-center gap-12">
+            <div class="text-center">
+                <h1 class="text-5xl font-extrabold text-violet-400 tracking-tight mb-4">Napište recenzi</h1>
+                <p class="text-gray-400 text-lg font-medium">Sdílejte svůj názor na hru s ostatními hráči</p>
+            </div>
     <section class="flex items-center">
         <div class="">
             <div class="isolate bg-gray-900 px-6 py-24 sm:py-32 lg:px-8">
@@ -46,7 +92,10 @@
             <h2 class="text-4xl font-semibold tracking-tight text-balance text-white sm:text-5xl">Recenze</h2>
             <p class="mt-2 text-lg/8 text-gray-400">Vyplňte prosím všechny pole.</p>
         </div>
-            <form id="muj-formular" class="mx-auto mt-16 max-w-xl sm:mt-20">
+            <form id="muj-formular" method="POST" class="mx-auto mt-16 max-w-xl sm:mt-20">
+        <?php if ($chyba): ?>
+          <p class="text-red-400 text-sm mb-4"><?= htmlspecialchars($chyba) ?></p>
+        <?php endif; ?>
         <div class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
         <div>
             <label for="first-name" class="block text-sm/6 font-semibold text-white">Jméno</label>
@@ -97,38 +146,41 @@
           <textarea id="message" name="message" rows="4" class="block w-full rounded-md bg-white/5 px-3.5 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500"></textarea>
         </div>
       </div>
-      <!-- Rating -->
-        <div class="flex flex-row-reverse justify-end items-center">
-          <input id="hs-ratings-readonly-1" type="radio" class="peer -ms-5 size-5 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="1">
-          <label for="hs-ratings-readonly-1" class="peer-checked:text-yellow-400 text-muted-foreground/50 pointer-events-none dark:peer-checked:text-yellow-600">
-            <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+      <!-- Rating — DOM pořadí 5→1 + flex-row-reverse = vizuální zobrazení 1→5 zleva doprava -->
+        <div class="sm:col-span-2">
+          <label class="block text-sm/6 font-semibold text-white mb-2">Hodnocení</label>
+          <div class="flex flex-row-reverse justify-end items-center gap-1">
+          <input id="hs-ratings-readonly-5" type="radio" class="peer -ms-5 size-6 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="5">
+          <label for="hs-ratings-readonly-5" class="peer-checked:text-yellow-400 text-gray-500 cursor-pointer">
+            <svg class="shrink-0 size-7" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
             </svg>
           </label>
-          <input id="hs-ratings-readonly-2" type="radio" class="peer -ms-5 size-5 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="2">
-          <label for="hs-ratings-readonly-2" class="peer-checked:text-yellow-400 text-muted-foreground/50 pointer-events-none dark:peer-checked:text-yellow-600">
-            <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <input id="hs-ratings-readonly-4" type="radio" class="peer -ms-5 size-6 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="4">
+          <label for="hs-ratings-readonly-4" class="peer-checked:text-yellow-400 text-gray-500 cursor-pointer">
+            <svg class="shrink-0 size-7" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
             </svg>
           </label>
-          <input id="hs-ratings-readonly-3" type="radio" class="peer -ms-5 size-5 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="3">
-          <label for="hs-ratings-readonly-3" class="peer-checked:text-yellow-400 text-muted-foreground/50 pointer-events-none dark:peer-checked:text-yellow-600">
-            <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <input id="hs-ratings-readonly-3" type="radio" class="peer -ms-5 size-6 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="3">
+          <label for="hs-ratings-readonly-3" class="peer-checked:text-yellow-400 text-gray-500 cursor-pointer">
+            <svg class="shrink-0 size-7" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
             </svg>
           </label>
-          <input id="hs-ratings-readonly-4" type="radio" class="peer -ms-5 size-5 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="4">
-          <label for="hs-ratings-readonly-4" class="peer-checked:text-yellow-400 text-muted-foreground/50 pointer-events-none dark:peer-checked:text-yellow-600">
-            <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <input id="hs-ratings-readonly-2" type="radio" class="peer -ms-5 size-6 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="2">
+          <label for="hs-ratings-readonly-2" class="peer-checked:text-yellow-400 text-gray-500 cursor-pointer">
+            <svg class="shrink-0 size-7" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
             </svg>
           </label>
-          <input id="hs-ratings-readonly-5" type="radio" class="peer -ms-5 size-5 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="5">
-          <label for="hs-ratings-readonly-5" class="peer-checked:text-yellow-400 text-muted-foreground/50 pointer-events-none dark:peer-checked:text-yellow-600">
-            <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <input id="hs-ratings-readonly-1" type="radio" class="peer -ms-5 size-6 bg-transparent border-0 text-transparent cursor-pointer appearance-none checked:bg-none focus:bg-none focus:ring-0 focus:ring-offset-0" name="hs-ratings-readonly" value="1">
+          <label for="hs-ratings-readonly-1" class="peer-checked:text-yellow-400 text-gray-500 cursor-pointer">
+            <svg class="shrink-0 size-7" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
             </svg>
           </label>
+        </div>
         </div>
 <!-- End Rating -->
       <div class="flex gap-x-4 sm:col-span-2">
@@ -145,20 +197,38 @@
       </div>
     </div>
     <div class="mt-10">
-      <button type="submit" class="block w-full rounded-md bg-indigo-500 px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">Let's talk</button>
+      <button type="submit" class="block w-full rounded-md bg-violet-600 px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-xs hover:bg-violet-500 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500">Odeslat recenzi</button>
     </div>
   </form>
 </div>
-      <section class="max-w-7xl mx-auto px-4 py-12">
-              <h2 class="text-3xl font-extrabold text-gray-900 mb-6">Aktuality z her</h2>
+      <section class="w-full max-w-3xl mx-auto px-4 py-12">
+              <h2 class="text-3xl font-extrabold text-white mb-6">Recenze hráčů</h2>
 
-              <div id="zpravy-kontejner" class="flex flex-col gap-4">
-                  <p class="text-gray-500 animate-pulse">Připojuju se jjpj</p>
+              <div id="zpravy-kontejner" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <?php foreach ($recenze as $r): ?>
+                  <div class="bg-gray-800 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-1">
+                      <span class="font-semibold text-white"><?= htmlspecialchars($r['jmeno'] . ' ' . $r['prijmeni']) ?></span>
+                      <span class="text-yellow-400"><?= str_repeat('★', $r['hvezdicky']) . str_repeat('☆', 5 - $r['hvezdicky']) ?></span>
+                    </div>
+                    <p class="text-indigo-300 text-sm mb-1">🎮 <?= htmlspecialchars($r['hra']) ?></p>
+                    <?php if ($r['zprava']): ?>
+                      <p class="text-gray-500 text-xs mt-2">Chcete ještě něco dodat?</p>
+                      <p class="text-gray-300 text-sm"><?= htmlspecialchars($r['zprava']) ?></p>
+                    <?php endif; ?>
+                    <p class="text-gray-500 text-xs mt-2"><?= $r['datum'] ?></p>
+                  </div>
+                  <?php endforeach; ?>
+                  <?php if (empty($recenze)): ?>
+                    <p class="text-gray-500">Zatím žádné recenze. Buď první!</p>
+                  <?php endif; ?>
               </div>
           </section>
     </section>
-    <footer class="bg-neutral-primary">
-        <div class="mx-auto w-full max-w-screen-xl">
+        </div>
+    </main>
+    <footer class="bg-gray-900 border-t border-gray-800">
+        <div class="mx-auto w-full max-w-7xl">
           <div class="grid grid-cols-2 gap-8 px-4 py-6 lg:py-8 md:grid-cols-4">
             <div>
                 <h2 class="mb-6 text-sm font-semibold text-heading uppercase text-gray-400">Company</h2>
@@ -226,7 +296,7 @@
                 </ul>
             </div>
         </div>
-        <div class="px-4 py-6 bg-neutral-secondary-soft md:flex md:items-center md:justify-between text-gray-400">
+        <div class="px-4 py-6 bg-gray-800 border-t border-gray-700 md:flex md:items-center md:justify-between text-gray-400">
             <span class="text-sm text-body sm:text-center">© 2023 <a href="https://flowbite.com/">Flowbite™</a>. All Rights Reserved.
             </span>
             <div class="flex mt-4 sm:justify-center md:mt-0 space-x-2 rtl:space-x-reverse">
